@@ -1,8 +1,10 @@
 import discord
 from discord.ext import commands
+from time import time
 import sys
 sys.path.append("..")
-from packages.fart import fart
+from packages.utils import gen
+from packages.utils import xpcomp
 import os
 import pandas as pd
 import math
@@ -11,6 +13,10 @@ import asyncio
 # Mongdb login credentials
 mongUser = os.getenv('mongUser')
 mongPass = os.getenv('mongPass')
+
+# Class initialization
+gen = gen()
+xpcomp = xpcomp()
 
 # Contains all commands related to XP competition
 class xpCompSuite(commands.Cog):
@@ -24,15 +30,17 @@ class xpCompSuite(commands.Cog):
     )
     async def xpcomp(self, ctx):
 
+        # Confirmation of start
         confirmation = await ctx.channel.send('Request received, generating...')
+        t0 = time()
 
         # Load master list
-        masterList = fart.mongtodf(mongUser, mongPass, 'xpcomp', 'masterList')
+        masterList = gen.mongtodf(mongUser, mongPass, 'xpcomp', 'masterList')
 
         # Pull current members of Nerfuria
         URL = "https://api.wynncraft.com/public_api.php?action=guildStats&command=Nerfuria"
-        fullGuildData = fart.requestget(URL)
-        currentdf = fart.extractmembers(fullGuildData)
+        fullGuildData = gen.requestget(URL)
+        currentdf = xpcomp.extractmembers(fullGuildData)
 
         # Initialize final dataframe
         leaderboard = pd.DataFrame(columns=['Name', 'XP'])
@@ -67,17 +75,16 @@ class xpCompSuite(commands.Cog):
         embed.set_footer(text='Requested by: ' + discord.utils.escape_markdown(ctx.author.display_name) + '')
 
         # Gets title info for embed
-        titleInfo = fart.mongtodf(mongUser, mongPass, "xpcomp", "titleInfo")
+        titleInfo = gen.mongtodf(mongUser, mongPass, "xpcomp", "titleInfo")
         titleInfo = titleInfo.sort_values(by=['index']).reset_index()
 
         # Get all guild leaderboard data
-        allGuildData = fart.requestget(
-            'https://api.wynncraft.com/public_api.php?action=statsLeaderboard&type=guild&timeframe=alltime')
+        allGuildData = gen.requestget('https://api.wynncraft.com/public_api.php?action=statsLeaderboard&type=guild&timeframe=alltime')
         allGuildData = allGuildData.get('data')
         guilddf = pd.DataFrame(allGuildData)
 
         # Separate out Nia's xp level
-        niaInfo = fart.extractxpandlvl('Nerfuria', guilddf)
+        niaInfo = xpcomp.extractxpandlvl('Nerfuria', guilddf)
 
         # Calculate xp data
         xpdata = {'level': [81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93 ,94],
@@ -135,8 +142,8 @@ class xpCompSuite(commands.Cog):
                                         inline=False)
                     i += 1
 
-        # Sends Message
-        print(ctx.author.display_name + ' requested XP leaderboard!')
+        # Prints log
+        print(ctx.author.display_name + ' requested XP leaderboard!' + ". Done in %0.3fs." % (time() - t0))
         await ctx.channel.send(embed=embed)
         await confirmation.delete()
 
@@ -147,7 +154,7 @@ class xpCompSuite(commands.Cog):
     )
     async def xpinit(self, ctx):
 
-        # Checks if user is Shoefarts
+        # Checks if user is Shoefarts (Admin)
         if ctx.author.id == 214554775956619264:
 
             # Confirmation of overwrite
@@ -180,10 +187,10 @@ class xpCompSuite(commands.Cog):
                     loading = await ctx.channel.send('Grabbing state...')
 
                     URL = "https://api.wynncraft.com/public_api.php?action=guildStats&command=Nerfuria"
-                    fullGuildData = fart.requestget(URL)
-                    masterdf = fart.extractmembers(fullGuildData)
+                    fullGuildData = gen.requestget(URL)
+                    masterdf = xpcomp.extractmembers(fullGuildData)
 
-                    fart.dftomong(mongUser, mongPass, 'xpcomp', 'masterList', masterdf, True)
+                    gen.dftomong(mongUser, mongPass, 'xpcomp', 'masterList', masterdf, True)
 
                     print(ctx.author.display_name + ' overwrote initial XP state!')
                     await ctx.channel.send('Initial XP state grabbed!')

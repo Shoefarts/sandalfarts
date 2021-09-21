@@ -1,17 +1,20 @@
 import discord
 from discord.ext import commands
+from time import time
 import sys
 sys.path.append("..")
-from packages.fart import fart
+from packages.utils import gen
+from packages.utils import wars
 import os
-import datetime
-import pandas as pd
 import math
-import asyncio
 
 # Mongdb login credentials
 mongUser = os.getenv('mongUser')
 mongPass = os.getenv('mongPass')
+
+# Class initialization
+gen = gen()
+wars = wars()
 
 # Contains all commands related to XP competition
 class guildWars(commands.Cog):
@@ -25,15 +28,17 @@ class guildWars(commands.Cog):
     )
     async def terrinfo(self, ctx, *, terrInput):
 
+        # Confirmation of start
         confirmation = await ctx.channel.send('Request received, generating...')
+        t0 = time()
 
         # Pulls API for list of terr owners
         URL = 'https://api.wynncraft.com/public_api.php?action=territoryList'
-        fullTerrList = fart.requestget(URL)
+        fullTerrList = gen.requestget(URL)
         allTerrs = fullTerrList.get('territories')
 
         # Pulls information for all terrs
-        terrData_df = fart.mongtodf(mongUser, mongPass, 'guildWars', 'terrData')
+        terrData_df = gen.mongtodf(mongUser, mongPass, 'guildWars', 'terrData')
         terrData_df = terrData_df.drop(columns=['_id', 'index'])
         terrData_dict = terrData_df.set_index('territory').T.to_dict('dict')
 
@@ -59,12 +64,12 @@ class guildWars(commands.Cog):
             terrOwner = allTerrs[terrName]['guild']
             terrAcquired = allTerrs[terrName]['acquired']
             treasury = ['Very low', 'Low', 'Medium', 'High', 'Very high']
-            timeandtreasury = fart.terrtimeandtreasury(allTerrs, terrName)
+            timeandtreasury = wars.terrtimeandtreasury(allTerrs, terrName)
             treasurylvl = timeandtreasury[1]
             terrHold_str = timeandtreasury[0]
 
             # Calculates resource and emeralds
-            [ore, crops, fish, wood, emerald] = fart.terrresandem(terrResource, terrEmerald)
+            [ore, crops, fish, wood, emerald] = wars.terrresandem(terrResource, terrEmerald)
             resandem_str = ''
             resandem_str += '> ' + str(emerald) + ' Emeralds'
             if ore != 0:
@@ -97,8 +102,8 @@ class guildWars(commands.Cog):
                             value=borders_str,
                             inline=False)
 
-        # Final wrapups
-        print(ctx.author.display_name + 'requested information on ' + terrInput)
+        # Prints log
+        print(ctx.author.display_name + ' requested information on ' + terrInput + ". Done in %0.3fs." % (time() - t0))
         await ctx.channel.send(embed=embed)
         await confirmation.delete()
 
@@ -109,10 +114,12 @@ class guildWars(commands.Cog):
     )
     async def guildterr(self, ctx, *, guildFullName):
 
+        # Confirmation of start
         confirmation = await ctx.channel.send('Request received, generating...')
+        t0 = time()
 
         # Get terr information
-        terrData = fart.terrlistget(guildFullName)
+        terrData = wars.terrlistget(guildFullName)
         guildName = terrData[0]
         terrList = terrData[1]
         terrList = dict(sorted(terrList.items(), key=lambda k_v: k_v[1]['acquired']))
@@ -151,7 +158,7 @@ class guildWars(commands.Cog):
                         break
 
                     else:
-                        timeandtreasury = fart.terrtimeandtreasury(terrList, terrList_keys[ind])
+                        timeandtreasury = wars.terrtimeandtreasury(terrList, terrList_keys[ind])
                         terrHold_Str = timeandtreasury[0]
                         treasurylvl = timeandtreasury[1]
 
@@ -165,7 +172,8 @@ class guildWars(commands.Cog):
                 page += 1
                 embedPage.extend(str(page))
 
-        print(ctx.author.display_name + ' requested ' + guildName + ' territory list!')
+        # Prints log
+        print(ctx.author.display_name + ' requested ' + guildName + ' territory list!' + ". Done in %0.3fs." % (time() - t0))
         await confirmation.delete()
 
         # Sending embed and doing pages
@@ -205,6 +213,70 @@ class guildWars(commands.Cog):
 
         await message.clear_reactions()
 
+    ### Guild HQ placement calculator ###
+    @commands.command(
+        help="Recommends a possible HQ placement location for an on-map guild solely based on the HQ bonus value",
+        brief="Find's the territory owned by a guild with the highest HQ bonus"
+    )
+    async def hqrecommend(self, ctx, *, guildFullName):
+
+        # Confirmation of start
+        confirmation = await ctx.channel.send('Request received, generating...')
+        t0 = time()
+
+        # Pulls information for all terrs
+        allTerrInfo = wars.pullterrdata(mongUser, mongPass)
+
+        # Get terr information
+        URL = 'https://api.wynncraft.com/public_api.php?action=territoryList'
+        fullTerrList = gen.requestget(URL)
+        allTerrs = fullTerrList.get('territories')
+        guildName = ''
+        terrGuild = {}
+        terrCount = 0
+        for terr in allTerrs:
+            if allTerrs[terr]['guild'].lower() == guildFullName.lower():
+                guildName = allTerrs[terr]['guild']
+                terrGuild[terr] = allTerrs[terr]
+                terrCount += 1
+        terrData = wars.terrlistget(guildFullName)
+        guildName = terrData[0]
+        terrList = terrData[1]
+        liveTerrDict = dict(sorted(terrList.items(), key=lambda k_v: k_v[1]['acquired']))
+
+        # Cleanup guild name
+        guildFullName = guildFullName.title()
+
+        # Generating embed for no terrs
+        if not terrList:
+            embed = discord.Embed(
+                title=guildFullName + 'Recommended HQ Location',
+                color=0x856c46)
+            embed.add_field(name=guildFullName + ' has no territories!',
+                            value='> *Nothing to see here*',
+                            inline=False)
+
+        # Processing data for on-map guild
+        else:
+            # Parses through every terr owned by the on-map guild and looks for highest hq bonus value
+            hqloc = wars.lochighesthqbonus(allTerrInfo, liveTerrDict)
+
+            # Generating embed
+            embed = discord.Embed(
+                title=guildName + ' Recommended HQ Location',
+                color=0x856c46)
+            for location in hqloc:
+                embed.add_field(name='**' + location[0] + '**',
+                                value='HQ Bonus: __+' + str(location[1]*100) + '%__',
+                                inline=False)
+
+        # Requester Information
+        embed.set_footer(text="Requested by: {}".format(ctx.author.display_name))
+
+        # Prints log
+        print(ctx.author.display_name + ' calculated hq placement for ' + guildFullName + ". Done in %0.3fs." % (time() - t0))
+        await ctx.channel.send(embed=embed)
+        await confirmation.delete()
 
 # Setup call
 def setup(bot):
