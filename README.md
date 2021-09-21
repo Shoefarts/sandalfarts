@@ -1,2 +1,2 @@
 # sandalfarts
-Discord bot used for guild server
+A Discord bot for utility commands coded in Python.
