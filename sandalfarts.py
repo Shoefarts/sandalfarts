@@ -2,7 +2,7 @@ from discord.ext import commands
 import os
 
 # Which bot to run?
-discMode = "proto"
+discMode = "sandals"
 
 # Bot Initialization
 bot = commands.Bot(command_prefix=":sh ")
