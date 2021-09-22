@@ -4,7 +4,7 @@ import os
 import time
 import sys
 sys.path.append("..")
-from packages.fart import gen
+from packages.utils import gen
 from datetime import datetime
 
 
