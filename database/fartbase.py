@@ -32,7 +32,7 @@ while i == 1:
         data = gen.requestget(entry.URL)
         data_df = pd.json_normalize(data)
         data_df.insert(0, 'date', todayFormat)
-        fart.dftomong(mongUser, mongPass, 'wynnAPI', entry.col, data_df, False)
+        gen.dftomong(mongUser, mongPass, 'wynnAPI', entry.col, data_df, False)
         print('Updated: ' + entry.col)
 
     # Prints log
