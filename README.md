@@ -1,6 +1,6 @@
 # Sandalfarts
 
-A Discord bot for Wynncraft-rekated utility commands coded in Python for private use.
+A Discord bot for Wynncraft-related utility commands coded in Python for private use.
 
 
 ## Usage
