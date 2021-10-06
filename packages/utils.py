@@ -13,7 +13,7 @@ class gen:
         return content
 
     def mongtodf(self, mongUser, mongPass, database, collection):
-        mongClient = pymongo.MongoClient('mongodb+srv://' + mongUser + ':' + mongPass + '@cluster0.mqiqi.mongodb.net/fartbase?retryWrites=true&w=majority')
+        mongClient = pymongo.MongoClient('mongodb+srv://' + mongUser + ':' + mongPass + '@cluster0.mqiqi.mongodb.net/fartbase?ssl=true&ssl_cert_reqs=CERT_NONE&retryWrites=true&w=majority')
         call = 'mongClient.' + database + '.' + collection
         col = eval(call)
         cursor = col.find()
@@ -22,7 +22,7 @@ class gen:
         return df
 
     def mongtolist(self, mongUser, mongPass, database, collection):
-        mongClient = pymongo.MongoClient('mongodb+srv://' + mongUser + ':' + mongPass + '@cluster0.mqiqi.mongodb.net/fartbase?retryWrites=true&w=majority')
+        mongClient = pymongo.MongoClient('mongodb+srv://' + mongUser + ':' + mongPass + '@cluster0.mqiqi.mongodb.net/fartbase?ssl=true&ssl_cert_reqs=CERT_NONE&retryWrites=true&w=majority')
         call = 'mongClient.' + database + '.' + collection
         col = eval(call)
         cursor = col.find()
@@ -30,7 +30,7 @@ class gen:
         return list_cur
 
     def dftomong(self, mongUser, mongPass, database, collection, dataframe, drop:bool):
-        mongClient = pymongo.MongoClient('mongodb+srv://' + mongUser + ':' + mongPass + '@cluster0.mqiqi.mongodb.net/fartbase?retryWrites=true&w=majority')
+        mongClient = pymongo.MongoClient('mongodb+srv://' + mongUser + ':' + mongPass + '@cluster0.mqiqi.mongodb.net/fartbase?ssl=true&ssl_cert_reqs=CERT_NONE&retryWrites=true&w=majority')
         mongDb = mongClient[database]
         mongCol = mongDb[collection]
         if drop == True:
