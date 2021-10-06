@@ -70,10 +70,6 @@ class xpCompSuite(commands.Cog):
         leaderboardVIP = leaderboardMain[(leaderboardMain.XP >= 1500000000) & (leaderboardMain.XP < 6000000000)]
         leaderboardRest = leaderboardMain[leaderboardMain.XP < 1500000000]
 
-        # Generating output message
-        embed = discord.Embed(title=f"**ლ(ಠ益ಠლ) | *__Nerfurian XP Rankings__* | 💪 (•︡益︠•) 👊**", color=0x856c46)
-        embed.set_footer(text='Requested by: ' + discord.utils.escape_markdown(ctx.author.display_name) + '')
-
         # Gets title info for embed
         titleInfo = gen.mongtodf(mongUser, mongPass, "xpcomp", "titleInfo")
         titleInfo = titleInfo.sort_values(by=['index']).reset_index()
@@ -101,9 +97,10 @@ class xpCompSuite(commands.Cog):
             elif row.level < niaInfo['lvl']:
                 xpGrinded += row.xp
         xpRemaining = xpTotal - xpGrinded
-        embed.add_field(name='***~--==__Estimated XP Remaining__==--~***',
-                        value='`' + "{:,}".format(xpRemaining) + ' XP Left`',
-                        inline=False)
+
+        # Embed Initialization
+        page = 0
+        embedPage = [0]
 
         # Generating embed body
         for row in titleInfo.itertuples(index=False):
@@ -112,40 +109,98 @@ class xpCompSuite(commands.Cog):
 
             # Looks for empty categories
             if lb.empty:
-                string = string + '> No one here yet!'
-                embed.add_field(name=row.title2,
-                                value=string,
+                embedPage[page] = discord.Embed(title=f"**ლ(ಠ益ಠლ) | *__Nerfurian XP Rankings__* | 💪 (•︡益︠•) 👊**", color=0x856c46)
+                embedPage[page].set_footer(text='Requested by: ' + discord.utils.escape_markdown(ctx.author.display_name) + '')
+                embedPage[page].add_field(name='***~--==__Estimated XP Remaining__==--~***',
+                                value='`' + "{:,}".format(xpRemaining) + ' XP Left`',
                                 inline=False)
+                string = string + '> No one here yet!'
+                embedPage[page].add_field(name=row.title2,
+                                          value=string,
+                                          inline=False)
+                page += 1
+                embedPage.extend(str(page))
 
-            # Generates filled categories and splits them into groups of 15, if able
+            # Splits up data into 15 entry-long embed pages
             else:
-                reqFields = math.ceil(len(lb.index) / 15)
-                i = 1
-                k = 0
-                while i <= reqFields:
-                    j = 0
-                    string = ''
-                    while j <= 14:
-                        j += 1
-                        if k >= len(lb.index):
+                intPage = page
+                reqPage = math.ceil(len(lb.index) / 15)
+                ind = 0
+
+                while page < (reqPage + intPage):
+                    k = 0
+                    while ind < reqPage:
+                        j = 0
+                        string = ''
+                        while j <= 14:
+                            j += 1
+                            if k >= len(lb.index):
+                                break
+                            else:
+                                if lb.iloc[k, 1] != 0:
+                                    string = string + '> ' + row.title1 + lb.iloc[k, 0] + row.title3 + '\n> XP: ' + "{:,}".format(lb.iloc[k, 1]) + '\n'
+                                    k += 1
+                                else:
+                                    k += 1
+
+                            if string:
+                                embedPage[page] = discord.Embed(
+                                    title=f"**ლ(ಠ益ಠლ) | *__Nerfurian XP Rankings__* | 💪 (•︡益︠•) 👊**", color=0x856c46)
+                                embedPage[page].set_footer(
+                                    text='Requested by: ' + discord.utils.escape_markdown(ctx.author.display_name) + '')
+                                embedPage[page].add_field(name='***~--==__Estimated XP Remaining__==--~***',
+                                                          value='`' + "{:,}".format(xpRemaining) + ' XP Left`',
+                                                          inline=False)
+                                embedPage[page].add_field(name=row.title2,
+                                                    value=string,
+                                                    inline=False)
+                        if ind >= reqPage:
                             break
                         else:
-                            if lb.iloc[k, 1] != 0:
-                                string = string + '> ' + row.title1 + lb.iloc[
-                                    k, 0] + row.title3 + '\n> XP: ' + "{:,}".format(lb.iloc[k, 1]) + '\n'
-                                k += 1
-                            else:
-                                k += 1
-                    if string:
-                        embed.add_field(name=row.title2,
-                                        value=string,
-                                        inline=False)
-                    i += 1
+                            ind += 1
+                            page += 1
+                            embedPage.extend(str(page))
 
         # Prints log
         print(ctx.author.display_name + ' requested XP leaderboard!' + ". Done in %0.3fs." % (time() - t0))
-        await ctx.channel.send(embed=embed)
         await confirmation.delete()
+
+        # Sending embed and doing pages
+        message = await ctx.send(embed=embedPage[0])
+        await message.add_reaction('⏮')
+        await message.add_reaction('◀')
+        await message.add_reaction('▶')
+        await message.add_reaction('⏭')
+
+        def check(reaction, user):
+            return user == ctx.author
+
+        i = 0
+        reaction = None
+
+        while True:
+            if str(reaction) == '⏮':
+                i = 0
+                await message.edit(embed=embedPage[i])
+            elif str(reaction) == '◀':
+                if i > 0:
+                    i -= 1
+                    await message.edit(embed=embedPage[i])
+            elif str(reaction) == '▶':
+                if i < (page - 2):
+                    i += 1
+                    await message.edit(embed=embedPage[i])
+            elif str(reaction) == '⏭':
+                i = (page - 2)
+                await message.edit(embed=embedPage[i])
+
+            try:
+                reaction, user = await self.bot.wait_for('reaction_add', timeout=30.0, check=check)
+                await message.remove_reaction(reaction, user)
+            except:
+                break
+
+        await message.clear_reactions()
 
     ### Sets Initial XP for Leaderboard Calculation ###
     @commands.command(
