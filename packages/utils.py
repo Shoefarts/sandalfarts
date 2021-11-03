@@ -3,6 +3,7 @@ import pandas as pd
 import pymongo
 import json
 import datetime
+import uuid
 
 class gen:
     def requestget(self, URL):
@@ -56,6 +57,21 @@ class xpcomp:
                 entry.pop(key, None)
         membersdf = pd.DataFrame.from_dict(members)
         return(membersdf)
+
+    def uuidfinder(self, ign):
+        URL = "https://api.mojang.com/users/profiles/minecraft/" + ign
+        try:
+            uuidRequest = gen().requestget(URL)
+        except json.decoder.JSONDecodeError:
+            return("Error")
+        else:
+            uuidMess = list(uuidRequest.values())[1]
+            try:
+                uuidClean = uuid.UUID(hex=uuidMess)
+            except ValueError:
+                return("Error")
+            else:
+                return(str(uuidClean))
 
 class wars:
     def terrlistget(self, guildFullName):

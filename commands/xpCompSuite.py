@@ -202,6 +202,102 @@ class xpCompSuite(commands.Cog):
 
         await message.clear_reactions()
 
+    ### Individual XP Rank ###
+    @commands.command(
+        help="Shows XP competition leaderboard ranking of specified player",
+        brief="Shows individual ranking of a player"
+    )
+    async def xprank(self, ctx, *, ign):
+
+        # Confirmation of start
+        confirmation = await ctx.channel.send('Request received, generating...')
+        t0 = time()
+
+        # Load master list
+        masterList = gen.mongtodf(mongUser, mongPass, 'xpcomp', 'masterList')
+
+        # Pull current members of Nerfuria
+        URL = "https://api.wynncraft.com/public_api.php?action=guildStats&command=Nerfuria"
+        fullGuildData = gen.requestget(URL)
+        currentdf = xpcomp.extractmembers(fullGuildData)
+
+        # Converts ign to uuid
+        uuidPlayer = xpcomp.uuidfinder(ign)
+
+        # Initializes embed item
+        embedPage = discord.Embed(title=f"**| *__Personal Nerfurian XP Ranking__* |**", color=0x856c46)
+        embedPage.set_footer(text='Requested by: ' + discord.utils.escape_markdown(ctx.author.display_name) + '')
+
+        # If player ign doesn't exist
+        if uuidPlayer == "Error":
+            embedPage.add_field(name='***ERROR***',
+                                value='Specified player: ' + ign + ' does not exist!',
+                                inline=False)
+
+        else:
+            # If player is in guild
+            if uuidPlayer in currentdf.uuid.values:
+
+                # Finds initial XP score of player
+                if uuidPlayer in masterList.uuid.values:
+                    ind = masterList.set_index('uuid').index.get_loc(uuidPlayer)
+                    xpCol = masterList['contributed']
+                    xp1 = xpCol[ind]
+                else:
+                    xp1 = 0
+
+                # Gets exact name and second XP score of player
+                ind = currentdf.set_index('uuid').index.get_loc(uuidPlayer)
+                nameCol = currentdf['name']
+                name = nameCol[ind]
+                contributedCol = currentdf['contributed']
+                xp2 = contributedCol[ind]
+
+                # Finds XP total and assembles leaderboard df
+                xpTotal = xp2 - xp1
+                leaderboardMain = pd.DataFrame(columns=['Name', 'XP'])
+                leaderboardMain = leaderboardMain.append({'Name': name, 'XP': xpTotal}, ignore_index=True)
+
+                leaderboardChamp = leaderboardMain[leaderboardMain.XP >= 37000000000]
+                leaderboardHero = leaderboardMain[(leaderboardMain.XP >= 18000000000) & (leaderboardMain.XP < 37000000000)]
+                leaderboardVIPp = leaderboardMain[(leaderboardMain.XP >= 6000000000) & (leaderboardMain.XP < 18000000000)]
+                leaderboardVIP = leaderboardMain[(leaderboardMain.XP >= 1500000000) & (leaderboardMain.XP < 6000000000)]
+                leaderboardRest = leaderboardMain[leaderboardMain.XP < 1500000000]
+
+                # Gets title info for embed
+                titleInfo = gen.mongtodf(mongUser, mongPass, "xpcomp", "titleInfo")
+                titleInfo = titleInfo.sort_values(by=['index']).reset_index()
+
+                # Finding threshold of player
+                for row in titleInfo.itertuples(index=False):
+                    k = 0
+                    lb = eval(row.rank)
+
+                    # Looks for empty categories
+                    if lb.empty:
+                        k += 1
+                        continue
+
+                    # Generating value field
+                    else:
+                        embedPage.add_field(name=row.title2,
+                                            value='> ' + row.title1 + lb.iloc[k, 0] + row.title3 + '\n> XP: ' + "{:,}".format(lb.iloc[k, 1]),
+                                            inline=False)
+                        k += 1
+
+            # If player is not in guild
+            else:
+                embedPage.add_field(name='***ERROR***',
+                                    value='Specified player: ' + ign + ' is not in the guild!',
+                                    inline=False)
+
+        # Sends embed
+        await ctx.send(embed=embedPage)
+
+        # Prints log
+        print(ctx.author.display_name + ' requested XP rank!' + ". Done in %0.3fs." % (time() - t0))
+        await confirmation.delete()
+
     ### Sets Initial XP for Leaderboard Calculation ###
     @commands.command(
         help="Resets XP leaderboard by updating the masterlist with the most recent copy of the API (Only usable by Shoe)",
