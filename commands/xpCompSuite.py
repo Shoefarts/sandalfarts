@@ -23,6 +23,41 @@ class xpCompSuite(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    ### UUID Lookup ###
+    @commands.command(
+        help="Looks up UUID of given player IGN",
+        brief="Loops up player UUID"
+    )
+    async def uuid(self, ctx, *, ign):
+
+        # Confirmation of start
+        confirmation = await ctx.channel.send('Request received, generating...')
+        t0 = time()
+
+        # Converts ign to uuid
+        uuidPlayer = xpcomp.uuidfinder(ign)
+
+        # Initializes embed item
+        embedPage = discord.Embed(title=f"UUID Lookup", color=0x856c46)
+        embedPage.set_footer(text='Requested by: ' + discord.utils.escape_markdown(ctx.author.display_name) + '')
+
+        # If player ign doesn't exist
+        if uuidPlayer[1] == "Error":
+            embedPage.add_field(name='***ERROR***',
+                                value='Specified player: ' + ign + ' does not exist!',
+                                inline=False)
+        else:
+            embedPage.add_field(name='Data for input: ' + ign,
+                                value='UUID: ' + uuidPlayer[1] + '\n Current IGN: ' + uuidPlayer[0],
+                                inline=False)
+
+        # Sends embed
+        await ctx.send(embed=embedPage)
+
+        # Prints log
+        print(ctx.author.display_name + ' requested UUID!' + ". Done in %0.3fs." % (time() - t0))
+        await confirmation.delete()
+
     ### XP leaderboard ###
     @commands.command(
         help="Shows current leaderboard of the XP competition and how much XP is left to gain to reach the goal",
@@ -238,25 +273,25 @@ class xpCompSuite(commands.Cog):
         embedPage.set_footer(text='Requested by: ' + discord.utils.escape_markdown(ctx.author.display_name) + '')
 
         # If player ign doesn't exist
-        if uuidPlayer == "Error":
+        if uuidPlayer[1] == "Error":
             embedPage.add_field(name='***ERROR***',
                                 value='Specified player: ' + ign + ' does not exist!',
                                 inline=False)
 
         else:
             # If player is in guild
-            if uuidPlayer in currentdf.uuid.values:
+            if uuidPlayer[1] in currentdf.uuid.values:
 
                 # Finds initial XP score of player
-                if uuidPlayer in masterList.uuid.values:
-                    ind = masterList.set_index('uuid').index.get_loc(uuidPlayer)
+                if uuidPlayer[1] in masterList.uuid.values:
+                    ind = masterList.set_index('uuid').index.get_loc(uuidPlayer[1])
                     xpCol = masterList['contributed']
                     xp1 = xpCol[ind]
                 else:
                     xp1 = 0
 
                 # Gets exact name and second XP score of player
-                ind = currentdf.set_index('uuid').index.get_loc(uuidPlayer)
+                ind = currentdf.set_index('uuid').index.get_loc(uuidPlayer[1])
                 nameCol = currentdf['name']
                 name = nameCol[ind]
                 contributedCol = currentdf['contributed']

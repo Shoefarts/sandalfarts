@@ -66,12 +66,13 @@ class xpcomp:
             return("Error")
         else:
             uuidMess = list(uuidRequest.values())[1]
+            curName = list(uuidRequest.values())[0]
             try:
                 uuidClean = uuid.UUID(hex=uuidMess)
             except ValueError:
                 return("Error")
             else:
-                return(str(uuidClean))
+                return([curName, str(uuidClean)])
 
 class wars:
     def terrlistget(self, guildFullName):
