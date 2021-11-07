@@ -101,7 +101,17 @@ class xpCompSuite(commands.Cog):
                 prestStr = ''
             else:
                 overflowXP = xpTotal - (37000000000 * prest)
-                prestStr = '\n> ***Prestige (' + str(prest) + '):*** *' + "{:,}".format(overflowXP) + ' overflow XP*'
+
+                if overflowXP >= 18000000000:
+                    prestThres = 'Hero'
+                elif overflowXP >= 6000000000:
+                    prestThres = 'VIP+'
+                elif overflowXP >= 1500000000:
+                    prestThres = 'VIP'
+                else:
+                    prestThres = 'Nothing Yet!'
+
+                prestStr = '\n> ***Prestige (' + str(prest) + '):*** *' + "{:,}".format(overflowXP) + ' overflow XP* \n> ***Threshold:*** *' + prestThres + '*'
 
             leaderboard = leaderboard.append({'Name': name, 'XP': xpTotal, 'Prestige': prestStr}, ignore_index=True)
 
@@ -307,7 +317,17 @@ class xpCompSuite(commands.Cog):
                     prestStr = ''
                 else:
                     overflowXP = xpTotal - (37000000000 * prest)
-                    prestStr = '\n> ***Prestige (' + str(prest) + '):*** *' + "{:,}".format(overflowXP) + ' overflow XP*'
+
+                    if overflowXP >= 18000000000:
+                        prestThres = 'Hero'
+                    elif overflowXP >= 6000000000:
+                        prestThres = 'VIP+'
+                    elif overflowXP >= 1500000000:
+                        prestThres = 'VIP'
+                    else:
+                        prestThres = 'Nothing Yet!'
+
+                    prestStr = '\n> ***Prestige (' + str(prest) + '):*** *' + "{:,}".format(overflowXP) + ' overflow XP* \n> ***Threshold:*** *' + prestThres + '*'
 
                 leaderboardMain = leaderboardMain.append({'Name': name, 'XP': xpTotal, 'Prestige': prestStr}, ignore_index=True)
 
