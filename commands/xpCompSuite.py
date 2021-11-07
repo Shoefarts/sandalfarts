@@ -55,11 +55,20 @@ class xpCompSuite(commands.Cog):
             else:
                 xp1 = 0
 
-            # Generating leaderboard
+            # Generating leaderboard values
             name = row.name
             xp2 = row.contributed
             xpTotal = xp2 - xp1
-            leaderboard = leaderboard.append({'Name': name, 'XP': xpTotal}, ignore_index=True)
+
+            # Calculate Prestiges
+            prest = int(xpTotal / 37000000000)
+            if prest == 0:
+                prestStr = ''
+            else:
+                overflowXP = xpTotal - (37000000000 * prest)
+                prestStr = '\n> ***Prestige (' + str(prest) + '):*** *' + "{:,}".format(overflowXP) + ' overflow XP*'
+
+            leaderboard = leaderboard.append({'Name': name, 'XP': xpTotal, 'Prestige': prestStr}, ignore_index=True)
 
         # Setting leaderboards
         leaderboardMain = leaderboard.sort_values(by=['XP'], ascending=False, ignore_index=True)
@@ -138,7 +147,7 @@ class xpCompSuite(commands.Cog):
                                 break
                             else:
                                 if lb.iloc[k, 1] != 0:
-                                    string = string + '> ' + row.title1 + lb.iloc[k, 0] + row.title3 + '\n> XP: ' + "{:,}".format(lb.iloc[k, 1]) + '\n'
+                                    string = string + '> ' + row.title1 + lb.iloc[k, 0] + row.title3 + '\n> XP: ' + "{:,}".format(lb.iloc[k, 1]) + lb.iloc[k, 2] + '\n\n'
                                     k += 1
                                 else:
                                     k += 1
@@ -256,7 +265,16 @@ class xpCompSuite(commands.Cog):
                 # Finds XP total and assembles leaderboard df
                 xpTotal = xp2 - xp1
                 leaderboardMain = pd.DataFrame(columns=['Name', 'XP'])
-                leaderboardMain = leaderboardMain.append({'Name': name, 'XP': xpTotal}, ignore_index=True)
+
+                # Calculate Prestieges
+                prest = int(xpTotal / 37000000000)
+                if prest == 0:
+                    prestStr = ''
+                else:
+                    overflowXP = xpTotal - (37000000000 * prest)
+                    prestStr = '\n> ***Prestige (' + str(prest) + '):*** *' + "{:,}".format(overflowXP) + ' overflow XP*'
+
+                leaderboardMain = leaderboardMain.append({'Name': name, 'XP': xpTotal, 'Prestige': prestStr}, ignore_index=True)
 
                 leaderboardChamp = leaderboardMain[leaderboardMain.XP >= 37000000000]
                 leaderboardHero = leaderboardMain[(leaderboardMain.XP >= 18000000000) & (leaderboardMain.XP < 37000000000)]
@@ -281,7 +299,7 @@ class xpCompSuite(commands.Cog):
                     # Generating value field
                     else:
                         embedPage.add_field(name=row.title2,
-                                            value='> ' + row.title1 + lb.iloc[k, 0] + row.title3 + '\n> XP: ' + "{:,}".format(lb.iloc[k, 1]),
+                                            value='> ' + row.title1 + lb.iloc[k, 0] + row.title3 + '\n> XP: ' + "{:,}".format(lb.iloc[k, 1]) + lb.iloc[k, 2],
                                             inline=False)
                         k += 1
 
