@@ -78,7 +78,7 @@ class xpCompSuite(commands.Cog):
         currentdf = xpcomp.extractmembers(fullGuildData)
 
         # Initialize final dataframe
-        leaderboard = pd.DataFrame(columns=['Name', 'XP'])
+        leaderboard = pd.DataFrame(columns=['Name', 'XP', 'Prestige'])
 
         # Compare lists
         for row in currentdf.itertuples(index=False):
@@ -90,39 +90,21 @@ class xpCompSuite(commands.Cog):
             else:
                 xp1 = 0
 
-            # Generating leaderboard values
+            # Generating xp total
             name = row.name
             xp2 = row.contributed
             xpTotal = xp2 - xp1
 
             # Calculate Prestiges
-            prest = int(xpTotal / 37000000000)
-            if prest == 0:
-                prestStr = ''
-            else:
-                overflowXP = xpTotal - (37000000000 * prest)
-
-                if overflowXP >= 18000000000:
-                    prestThres = 'Hero'
-                elif overflowXP >= 6000000000:
-                    prestThres = 'VIP+'
-                elif overflowXP >= 1500000000:
-                    prestThres = 'VIP'
-                else:
-                    prestThres = 'Nothing Yet!'
-
-                prestStr = '\n> ***Prestige (' + str(prest) + '):*** *' + "{:,}".format(overflowXP) + ' overflow XP* \n> ***Threshold:*** *' + prestThres + '*'
+            prestStr = xpcomp.prestCalc(xpTotal)
 
             leaderboard = leaderboard.append({'Name': name, 'XP': xpTotal, 'Prestige': prestStr}, ignore_index=True)
 
         # Setting leaderboards
         leaderboardMain = leaderboard.sort_values(by=['XP'], ascending=False, ignore_index=True)
 
-        leaderboardChamp = leaderboardMain[leaderboardMain.XP >= 37000000000]
-        leaderboardHero = leaderboardMain[(leaderboardMain.XP >= 18000000000) & (leaderboardMain.XP < 37000000000)]
-        leaderboardVIPp = leaderboardMain[(leaderboardMain.XP >= 6000000000) & (leaderboardMain.XP < 18000000000)]
-        leaderboardVIP = leaderboardMain[(leaderboardMain.XP >= 1500000000) & (leaderboardMain.XP < 6000000000)]
-        leaderboardRest = leaderboardMain[leaderboardMain.XP < 1500000000]
+        # Splits up into individual thresholds
+        [leaderboardChamp, leaderboardHero, leaderboardVIPp, leaderboardVIP, leaderboardRest] = xpcomp.leaderboardSplit(leaderboardMain)
 
         # Gets title info for embed
         titleInfo = gen.mongtodf(mongUser, mongPass, "xpcomp", "titleInfo")
@@ -137,9 +119,8 @@ class xpCompSuite(commands.Cog):
         niaInfo = xpcomp.extractxpandlvl('Nerfuria', guilddf)
 
         # Calculate xp data
-        xpdata = {'level': [81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93 ,94],
-                  'xp': [11001668175, 12651938401, 14549749161, 16732231535, 19242086266, 22128419206, 25447702087,
-                         29264877400, 33654629009, 38702507644, 44507883791, 51184066360, 58861676314, 67690927761]}
+        xpdata = {'level': [95, 96, 97, 98, 99],
+                  'xp': [77843189235, 89520186224, 102948810556, 118391818001, 136162150806]}
         xp_df = pd.DataFrame(xpdata)
 
         xpTotal = 0
@@ -307,35 +288,16 @@ class xpCompSuite(commands.Cog):
                 contributedCol = currentdf['contributed']
                 xp2 = contributedCol[ind]
 
-                # Finds XP total and assembles leaderboard df
+                # Finds XP total
                 xpTotal = xp2 - xp1
-                leaderboardMain = pd.DataFrame(columns=['Name', 'XP'])
 
                 # Calculate Prestieges
-                prest = int(xpTotal / 37000000000)
-                if prest == 0:
-                    prestStr = ''
-                else:
-                    overflowXP = xpTotal - (37000000000 * prest)
+                prestStr = xpcomp.prestCalc(xpTotal)
 
-                    if overflowXP >= 18000000000:
-                        prestThres = 'Hero'
-                    elif overflowXP >= 6000000000:
-                        prestThres = 'VIP+'
-                    elif overflowXP >= 1500000000:
-                        prestThres = 'VIP'
-                    else:
-                        prestThres = 'Nothing Yet!'
-
-                    prestStr = '\n> ***Prestige (' + str(prest) + '):*** *' + "{:,}".format(overflowXP) + ' overflow XP* \n> ***Threshold:*** *' + prestThres + '*'
-
+                # Creates main leaderboard and splits up into individual thresholds
+                leaderboardMain = pd.DataFrame(columns=['Name', 'XP', 'Prestige'])
                 leaderboardMain = leaderboardMain.append({'Name': name, 'XP': xpTotal, 'Prestige': prestStr}, ignore_index=True)
-
-                leaderboardChamp = leaderboardMain[leaderboardMain.XP >= 37000000000]
-                leaderboardHero = leaderboardMain[(leaderboardMain.XP >= 18000000000) & (leaderboardMain.XP < 37000000000)]
-                leaderboardVIPp = leaderboardMain[(leaderboardMain.XP >= 6000000000) & (leaderboardMain.XP < 18000000000)]
-                leaderboardVIP = leaderboardMain[(leaderboardMain.XP >= 1500000000) & (leaderboardMain.XP < 6000000000)]
-                leaderboardRest = leaderboardMain[leaderboardMain.XP < 1500000000]
+                [leaderboardChamp, leaderboardHero, leaderboardVIPp, leaderboardVIP, leaderboardRest] = xpcomp.leaderboardSplit(leaderboardMain)
 
                 # Gets title info for embed
                 titleInfo = gen.mongtodf(mongUser, mongPass, "xpcomp", "titleInfo")
@@ -370,6 +332,80 @@ class xpCompSuite(commands.Cog):
         # Prints log
         print(ctx.author.display_name + ' requested XP rank!' + ". Done in %0.3fs." % (time() - t0))
         await confirmation.delete()
+
+    ### XP Redemption ###
+    @commands.command(
+        help="Let's Aerrihn update a player's redeemed XP amounts (Only usable by Aerrihn and Shoefarts",
+        brief="Updates player XP redeemed amounts"
+    )
+    async def xpredeem(self, ctx, action, ign, redeemedXP):
+
+        # Checks if user is Shoefarts or Aerrihn (Admin)
+        if (ctx.author.id == 214554775956619264 or ctx.author.id == 278107914043129867):
+
+            # Checks if action is recognized
+            if (action == "add" or action == "subtract" or action == "reset"):
+
+                # Checks if redeemedXP is int
+                try:
+                    redeemedXP = int(redeemedXP)
+
+                # Not an int
+                except ValueError:
+                    await ctx.channel.send('Invalid XP amount! Final input must be a number.')
+
+                # Is an int
+                else:
+
+                    # Checks if ign is valid
+                    uuidPlayer = xpcomp.uuidfinder(ign)
+                    if uuidPlayer[1] != "Error":
+
+                        # Load master list
+                        masterList = gen.mongtodf(mongUser, mongPass, 'xpcomp', 'masterList')
+
+                        # Pull current members of Nerfuria
+                        URL = "https://api.wynncraft.com/public_api.php?action=guildStats&command=Nerfuria"
+                        fullGuildData = gen.requestget(URL)
+                        currentdf = xpcomp.extractmembers(fullGuildData)
+
+                        # If player is in guild
+                        if uuidPlayer[1] in currentdf.uuid.values:
+
+                            # Finds initial XP score of player
+                            if uuidPlayer[1] in masterList.uuid.values:
+                                ind = masterList.set_index('uuid').index.get_loc(uuidPlayer[1])
+                                xpCol = masterList['contributed']
+                                xp1 = xpCol[ind]
+                            else:
+                                xp1 = 0
+
+                            # Gets exact name and second XP score of player
+                            ind = currentdf.set_index('uuid').index.get_loc(uuidPlayer[1])
+                            nameCol = currentdf['name']
+                            name = nameCol[ind]
+                            contributedCol = currentdf['contributed']
+                            xp2 = contributedCol[ind]
+
+                            # Finds XP total
+                            xpTotal = xp2 - xp1
+
+                        # If player not in guild
+                        else:
+                            await ctx.channel.send('Player is not in the guild!')
+
+                    # IGN not valid
+                    else:
+                        await ctx.channel.send('Invalid IGN! Check your spelling.')
+
+            # Action not recognized
+            else:
+                await ctx.channel.send('Action not recognized! Available actions: add, subtract, reset')
+
+        # User is not Aerrihn or Shoefarts
+        else:
+            await ctx.channel.send('Only Aerrihn can update the XP redeemed amounts!')
+
 
     ### Sets Initial XP for Leaderboard Calculation ###
     @commands.command(

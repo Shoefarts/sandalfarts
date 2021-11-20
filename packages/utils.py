@@ -63,16 +63,41 @@ class xpcomp:
         try:
             uuidRequest = gen().requestget(URL)
         except json.decoder.JSONDecodeError:
-            return("Error")
+            return(["Error", "Error"])
         else:
             uuidMess = list(uuidRequest.values())[1]
             curName = list(uuidRequest.values())[0]
             try:
                 uuidClean = uuid.UUID(hex=uuidMess)
             except ValueError:
-                return("Error")
+                return(["Error", "Error"])
             else:
                 return([curName, str(uuidClean)])
+
+    def prestCalc(self, xpTotal):
+        prest = int(xpTotal / 37000000000)
+        if prest == 0:
+            prestStr = ''
+        else:
+            overflowXP = xpTotal - (37000000000 * prest)
+            if overflowXP >= 18000000000:
+                prestThres = 'Hero'
+            elif overflowXP >= 6000000000:
+                prestThres = 'VIP+'
+            elif overflowXP >= 1500000000:
+                prestThres = 'VIP'
+            else:
+                prestThres = 'Nothing Yet!'
+            prestStr = '\n> ***Prestige (' + str(prest) + '):*** *' + "{:,}".format(overflowXP) + ' overflow XP* \n> ***Threshold:*** *' + prestThres + '*'
+        return(prestStr)
+
+    def leaderboardSplit(self, leaderboard):
+        leaderboardChamp = leaderboard[leaderboard.XP >= 37000000000]
+        leaderboardHero = leaderboard[(leaderboard.XP >= 18000000000) & (leaderboard.XP < 37000000000)]
+        leaderboardVIPp = leaderboard[(leaderboard.XP >= 6000000000) & (leaderboard.XP < 18000000000)]
+        leaderboardVIP = leaderboard[(leaderboard.XP >= 1500000000) & (leaderboard.XP < 6000000000)]
+        leaderboardRest = leaderboard[leaderboard.XP < 1500000000]
+        return(leaderboardChamp, leaderboardHero, leaderboardVIPp, leaderboardVIP, leaderboardRest)
 
 class wars:
     def terrlistget(self, guildFullName):
