@@ -11,7 +11,9 @@ All commands are prefixed with `:sh` with a space following after.
 
 Commands in this category pertain to Nerfurian Guild XP competition tracking.
 
+  - `uuid [IGN]` will find Minecraft UUID and current username of specified player.
   - `xpcomp` will display a live leaderboard of players ranked from most XP contributed to least.
+  - `xprank [IGN]` will display XP leaderboard statistics for specified player.
   - `xpinit` will wipe the leaderboard rankings and start a new XP competition (hardcoded only for use by Shoefarts).
 
 ### Guild Wars
