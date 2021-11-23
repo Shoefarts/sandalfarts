@@ -96,7 +96,7 @@ class xpcomp:
         leaderboardHero = leaderboard[(leaderboard.XP >= 18000000000) & (leaderboard.XP < 37000000000)]
         leaderboardVIPp = leaderboard[(leaderboard.XP >= 6000000000) & (leaderboard.XP < 18000000000)]
         leaderboardVIP = leaderboard[(leaderboard.XP >= 1500000000) & (leaderboard.XP < 6000000000)]
-        leaderboardRest = leaderboard[leaderboard.XP < 1500000000]
+        leaderboardRest = leaderboard[(leaderboard.XP > 0) & (leaderboard.XP < 1500000000)]
         return(leaderboardChamp, leaderboardHero, leaderboardVIPp, leaderboardVIP, leaderboardRest)
 
 class wars:

@@ -187,8 +187,8 @@ class xpCompSuite(commands.Cog):
                                                           value='`' + "{:,}".format(xpRemaining) + ' XP Left`',
                                                           inline=False)
                                 embedPage[page].add_field(name=row.title2,
-                                                    value=string,
-                                                    inline=False)
+                                                          value=string,
+                                                          inline=False)
                         if ind >= reqPage:
                             break
                         else:
@@ -222,11 +222,11 @@ class xpCompSuite(commands.Cog):
                     i -= 1
                     await message.edit(embed=embedPage[i])
             elif str(reaction) == '▶':
-                if i < (page - 2):
+                if i < (page - 1):
                     i += 1
                     await message.edit(embed=embedPage[i])
             elif str(reaction) == '⏭':
-                i = (page - 2)
+                i = (page - 1)
                 await message.edit(embed=embedPage[i])
 
             try:
