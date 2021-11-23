@@ -104,7 +104,7 @@ class xpCompSuite(commands.Cog):
         leaderboardMain = leaderboard.sort_values(by=['XP'], ascending=False, ignore_index=True)
 
         # Splits up into individual thresholds
-        [leaderboardChamp, leaderboardHero, leaderboardVIPp, leaderboardVIP, leaderboardRest] = xpcomp.leaderboardSplit(leaderboardMain)
+        [leaderboardChamp, leaderboardHero, leaderboardVIPp, leaderboardVIP, leaderboardRest, leaderboardZero] = xpcomp.leaderboardSplit(leaderboardMain)
 
         # Gets title info for embed
         titleInfo = gen.mongtodf(mongUser, mongPass, "xpcomp", "titleInfo")
@@ -297,7 +297,7 @@ class xpCompSuite(commands.Cog):
                 # Creates main leaderboard and splits up into individual thresholds
                 leaderboardMain = pd.DataFrame(columns=['Name', 'XP', 'Prestige'])
                 leaderboardMain = leaderboardMain.append({'Name': name, 'XP': xpTotal, 'Prestige': prestStr}, ignore_index=True)
-                [leaderboardChamp, leaderboardHero, leaderboardVIPp, leaderboardVIP, leaderboardRest] = xpcomp.leaderboardSplit(leaderboardMain)
+                [leaderboardChamp, leaderboardHero, leaderboardVIPp, leaderboardVIP, leaderboardRest, leaderboardZero] = xpcomp.leaderboardSplit(leaderboardMain)
 
                 # Gets title info for embed
                 titleInfo = gen.mongtodf(mongUser, mongPass, "xpcomp", "titleInfo")
@@ -319,6 +319,16 @@ class xpCompSuite(commands.Cog):
                                             value='> ' + row.title1 + lb.iloc[k, 0] + row.title3 + '\n> XP: ' + "{:,}".format(lb.iloc[k, 1]) + lb.iloc[k, 2],
                                             inline=False)
                         k += 1
+
+                lb = leaderboardZero
+                if not lb.empty:
+                    embedPage.add_field(name="**__Not Reached a Threshold Yet__**",
+                                        value='> ' + "**" + lb.iloc[
+                                            0, 0] + "**" + '\n> XP: ' + "{:,}".format(lb.iloc[0, 1]) + lb.iloc[
+                                                  0, 2],
+                                        inline=False)
+                    k += 1
+
 
             # If player is not in guild
             else:

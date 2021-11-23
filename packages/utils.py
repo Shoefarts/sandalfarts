@@ -97,7 +97,8 @@ class xpcomp:
         leaderboardVIPp = leaderboard[(leaderboard.XP >= 6000000000) & (leaderboard.XP < 18000000000)]
         leaderboardVIP = leaderboard[(leaderboard.XP >= 1500000000) & (leaderboard.XP < 6000000000)]
         leaderboardRest = leaderboard[(leaderboard.XP > 0) & (leaderboard.XP < 1500000000)]
-        return(leaderboardChamp, leaderboardHero, leaderboardVIPp, leaderboardVIP, leaderboardRest)
+        leaderboardZero = leaderboard[leaderboard.XP == 0]
+        return(leaderboardChamp, leaderboardHero, leaderboardVIPp, leaderboardVIP, leaderboardRest, leaderboardZero)
 
 class wars:
     def terrlistget(self, guildFullName):
