@@ -26,7 +26,7 @@ class xpCompSuite(commands.Cog):
     ### UUID Lookup ###
     @commands.command(
         help="Looks up UUID of given player IGN",
-        brief="Loops up player UUID"
+        brief="Looks up player UUID"
     )
     async def uuid(self, ctx, *, ign):
 
